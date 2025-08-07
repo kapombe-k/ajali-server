@@ -1,15 +1,16 @@
-# requirements.txt
+# requirements.txt (updated)
 flask==3.0.2
 flask-sqlalchemy==3.1.1
-sqlalchemy==2.0.25 
-sqlalchemy-serializer==1.4.22
+sqlalchemy==2.0.25
+sqlalchemy-serializer==1.4.2 # Latest available (1.5.0 doesn't exist)
 flask-migrate==4.0.5
 flask-restful==0.3.10
 flask-cors==4.0.0
 flask-bcrypt==1.0.1
 flask-jwt-extended==4.5.3
 python-dotenv==1.0.0
-dotenv==0.0.5
-gunicorn==21.2.0  
-# Required by flask-migrate
-alembic==1.13.1
+gunicorn==21.2.0
+alembic==1.13.1  # Required by flask-migrate
+
+# Explicitly exclude 'distribute' (if needed)
+setuptools>=68.0.0  # Ensures modern setuptools is used
