@@ -63,7 +63,7 @@ api.add_resource(ReportResource, "/api/reports", "/api/reports/<int:report_id>")
 api.add_resource(LocationResource, "/api/locations", "/api/locations/<int:location_id>")
 api.add_resource(ReportStatusUpdateResource, "/api/reports/<int:report_id>/status")
 
-@app.before_first_request
+@app.after_request
 def after_request(response):
     # Ensure responses have proper CORS headers
     response.headers.add('Access-Control-Allow-Origin', FRONTEND_URL)

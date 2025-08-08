@@ -1,4 +1,3 @@
-
 from flask_restful import Resource,reqparse
 import re
 from models import db,User
@@ -174,9 +173,4 @@ class TokenRefreshResource(Resource):
         return {
             "access_token": new_access_token,
             "user": user.to_dict()
-        }, 200
-
-
-
-
- 
+        }, 200 
