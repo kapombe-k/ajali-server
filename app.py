@@ -62,7 +62,7 @@ api.add_resource(ReportStatusUpdateResource, "/admin/reports/<int:report_id>/sta
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
 
 
 
