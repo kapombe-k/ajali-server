@@ -56,12 +56,12 @@ CORS(
 )
 
 # Register resource routes
-api.add_resource(UserResources, "/api/users", "/api/users/<int:id>")
-api.add_resource(LoginResource, "/api/login")
-api.add_resource(TokenRefreshResource, "/api/token/refresh")
-api.add_resource(ReportResource, "/api/reports", "/api/reports/<int:report_id>")
-api.add_resource(LocationResource, "/api/locations", "/api/locations/<int:location_id>")
-api.add_resource(ReportStatusUpdateResource, "/api/reports/<int:report_id>/status")
+api.add_resource(UserResources, "/users", "/users/<int:id>")
+api.add_resource(LoginResource, "/login")
+api.add_resource(TokenRefreshResource, "/token/refresh")
+api.add_resource(ReportResource, "/reports", "/reports/<int:report_id>")
+api.add_resource(LocationResource, "/locations", "/locations/<int:location_id>")
+api.add_resource(ReportStatusUpdateResource, "/reports/<int:report_id>/status")
 
 @app.after_request
 def after_request(response):
