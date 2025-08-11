@@ -1,25 +1,24 @@
 from flask_restful import Resource, reqparse
-from flask import jsonify, make_response
+from flask import jsonify
 import re
 from models import db, User
 from flask_bcrypt import generate_password_hash, check_password_hash
-from flask_jwt_extended import (create_access_token, jwt_required, 
-                               create_refresh_token, get_jwt_identity)
+from flask_jwt_extended import (create_access_token, jwt_required, create_refresh_token, get_jwt_identity)
 
-class BaseResource(Resource):
-    def success_response(self, data, status=200):
-        return make_response(jsonify({
-            "status": "success",
-            "data": data
-        }), status)
+# class BaseResource(Resource):
+#     def success_response(self, data, status=200):
+#         return make_response(jsonify({
+#             "status": "success",
+#             "data": data
+#         }), status)
 
-    def error_response(self, message, status=400):
-        return make_response(jsonify({
-            "status": "error",
-            "message": message
-        }), status)
+#     def error_response(self, message, status=400):
+#         return make_response(jsonify({
+#             "status": "error",
+#             "message": message
+#         }), status)
 
-class UserResources(BaseResource):
+class UserResources(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument("first_name", type=str, required=True, help="first_name is required")
     parser.add_argument("last_name", type=str, required=True, help="last_name is required")
@@ -48,35 +47,35 @@ class UserResources(BaseResource):
         try:
             if id is None:
                 users = User.query.all()
-                return self.success_response([user.to_dict() for user in users])
+                return jsonify({"Success": True, "data": [user.to_dict() for user in users]}), 200
             else:
-                user = User.query.filter_by(id=id).first()
-                if user is None:
-                    return self.error_response("User not found", 404)
-                return self.success_response(user.to_dict())
+                user = User.query.get(id)
+                if not user:
+                    return jsonify({"Success": False, "message": "User not found"}), 404
+                return jsonify({"Success": True, "data": user.to_dict()}), 200
         except Exception as e:
-            return self.error_response(str(e), 500)
-    
+            return jsonify({"Success": False, "message": str(e)}), 500
+
     def post(self):
         data = self.parser.parse_args()
 
         # Validate email format
         if not self.validate_email(data["email"]):
-            return self.error_response("Invalid email format", 400)
+            return jsonify({"Success": False, "message": "Invalid email format"}), 400
             
         # Validate password strength
         is_valid, message = self.validate_password(data["password"])
         if not is_valid:
-            return self.error_response(message, 400)
+            return jsonify({"Success": False, "message": message}), 400
             
         # Check for existing email
         if User.query.filter_by(email=data["email"]).first():
-            return self.error_response("Email address already taken", 409)
-            
+            return jsonify({"Success": False, "message": "Email address already taken"}), 409
+
         # Check for existing phone number
         if User.query.filter_by(phone_number=data["phone_number"]).first():
-            return self.error_response("Phone number already taken", 409)
-            
+            return jsonify({"Success": False, "message": "Phone number already taken"}), 409
+
         try:
             # Hash password
             hashed_password = generate_password_hash(data['password']).decode('utf-8')
@@ -97,24 +96,26 @@ class UserResources(BaseResource):
                 additional_claims={"name": user.first_name, "role": user.role}
             )
             
-            response_data = {
-                "user": user.to_dict(),
-                "access_token": access_token,
-                "refresh_token": refresh_token
-            }
-            return self.success_response(response_data, 201)
-            
+            return jsonify({
+                "Success": True,
+                "data": {
+                    "user": user.to_dict(),
+                    "access_token": access_token,
+                    "refresh_token": refresh_token
+                }
+            }), 201
+
         except Exception as e:
             db.session.rollback()
-            return self.error_response(f"Error creating user: {str(e)}", 500)
-    
+            return jsonify({"Success": False, "message": f"Error creating user: {str(e)}"}), 500
+
     @jwt_required()
     def patch(self, id):
         try:
-            user = User.query.filter_by(id=id).first()
+            user = User.query.get(id)
             if not user:
-                return self.error_response("User not found", 404)
-            
+                return jsonify({"Success": False, "message": "User not found"}), 404
+
             data = self.parser.parse_args()
 
             if data['first_name'] is not None:
@@ -129,29 +130,28 @@ class UserResources(BaseResource):
                 user.phone_number = data['phone_number']
 
             db.session.commit()
-            return self.success_response({
-                "message": "User updated successfully",
-                "user": user.to_dict()
-            })
+            return jsonify(
+                {"Success": True, "message": "User updated successfully", "data": user.to_dict()}
+            ), 200
         except Exception as e:
             db.session.rollback()
-            return self.error_response(str(e), 500)
+            return jsonify({"Success": False, "message": str(e)}), 500
 
     @jwt_required()
     def delete(self, id):
         try:
-            user = User.query.filter_by(id=id).first()  
+            user = User.query.get(id)
             if user is None:
-                return self.error_response("User not found", 404)
-            
+                return jsonify({"Success": False, "message": "User not found"}), 404
+
             db.session.delete(user)
             db.session.commit()
-            return self.success_response({"message": "User successfully deleted"})
+            return jsonify({"Success": True, "message": "User successfully deleted"}), 200
         except Exception as e:
             db.session.rollback()
-            return self.error_response(str(e), 500)
+            return jsonify({"Success": False, "message": str(e)}), 500
 
-class LoginResource(BaseResource):
+class LoginResource(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument("email", type=str, required=True, help="Email is required")
     parser.add_argument("password", type=str, required=True, help="Password is required")
@@ -162,8 +162,8 @@ class LoginResource(BaseResource):
             user = User.query.filter_by(email=data["email"]).first()
 
             if not user or not check_password_hash(user.password, data['password']):
-                return self.error_response("Incorrect email or password", 401)
-                
+                return jsonify({"Success": False, "message": "Incorrect email or password"}), 401
+
             access_token = create_access_token(
                 identity=str(user.id),
                 additional_claims={"name": user.first_name, "role": user.role}
@@ -173,33 +173,40 @@ class LoginResource(BaseResource):
                 additional_claims={"name": user.first_name, "role": user.role}
             )
             
-            response_data = {
-                "user": user.to_dict(),
-                "access_token": access_token,
-                "refresh_token": refresh_token
-            }
-            return self.success_response(response_data)
+            return jsonify({
+                "Success": True,
+                "message": "Login successful",
+                "data": {
+                    "user": user.to_dict(),
+                    "access_token": access_token,
+                    "refresh_token": refresh_token
+                }
+            }), 200
         except Exception as e:
-            return self.error_response(str(e), 500)
-    
-class TokenRefreshResource(BaseResource):
+            return jsonify({"Success": False, "message": str(e)}), 500
+
+class TokenRefreshResource(Resource):
     @jwt_required(refresh=True)
     def post(self):
         try:
-            current_user = get_jwt_identity()
-            user = User.query.get(current_user)
-            
+            current_user_id = get_jwt_identity()
+            user = User.query.get(current_user_id)
+
             if not user:
-                return self.error_response("User not found", 404)
-                
+                return jsonify({"Success": False, "message": "User not found"}), 404
+
             new_access_token = create_access_token(
                 identity=str(user.id),
                 additional_claims={"name": user.first_name, "role": user.role}
             )
-            
-            return self.success_response({
-                "access_token": new_access_token,
-                "user": user.to_dict()
-            })
+
+            return jsonify({
+                "Success": True,
+                "message": "Token refreshed successfully",
+                "data": {
+                    "access_token": new_access_token,
+                    "user": user.to_dict()
+                }
+            }), 200
         except Exception as e:
-            return self.error_response(str(e), 500)
+            return jsonify({"Success": False, "message": str(e)}), 500
