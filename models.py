@@ -26,9 +26,8 @@ class User(db.Model, SerializerMixin):
     first_name = db.Column(db.String, nullable=False)
     last_name = db.Column(db.String, nullable=False)
     email = db.Column(db.String, unique=True, nullable=False)
-    password = db.Column(db.VARCHAR, nullable=True)
+    password = db.Column(db.VARCHAR, nullable=False)
     phone_number = db.Column(db.String, unique=True, nullable=False)
-
     created_at = db.Column(db.TIMESTAMP)
     
     role = db.Column(db.String, default="user") 
@@ -50,14 +49,8 @@ class Report(db.Model, SerializerMixin):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     incident = db.Column(db.String, nullable=False)
     details = db.Column(db.Text, nullable=False)
-
-
-
     latitude = db.Column(db.Float, nullable=False, server_default="0")
     longitude = db.Column(db.Float, nullable=False, server_default="0")
-   
-
-
     created_at = db.Column(db.TIMESTAMP)
 
     user = db.relationship("User", back_populates="reports")
@@ -117,7 +110,6 @@ class Location(db.Model, SerializerMixin):
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
     address = db.Column(db.String)
-
     created_at = db.Column(db.TIMESTAMP)
 
     report_id = db.Column(db.Integer, db.ForeignKey("reports.id"), nullable=False)
