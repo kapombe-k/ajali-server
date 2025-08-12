@@ -1,5 +1,4 @@
 from flask_restful import Resource, reqparse
-from flask import jsonify
 import re
 from models import db, User
 from flask_bcrypt import generate_password_hash, check_password_hash
@@ -173,7 +172,7 @@ class LoginResource(Resource):
                 additional_claims={"name": user.first_name, "role": user.role}
             )
             
-            return jsonify({
+            return ({
                 "Success": True,
                 "message": "Login successful",
                 "data": {
@@ -183,7 +182,7 @@ class LoginResource(Resource):
                 }
             }), 200
         except Exception as e:
-            return jsonify({"Success": False, "message": str(e)}), 500
+            return ({"Success": False, "message": str(e)}), 500
 
 class TokenRefreshResource(Resource):
     @jwt_required(refresh=True)
@@ -193,14 +192,14 @@ class TokenRefreshResource(Resource):
             user = User.query.get(current_user_id)
 
             if not user:
-                return jsonify({"Success": False, "message": "User not found"}), 404
+                return ({"Success": False, "message": "User not found"}), 404
 
             new_access_token = create_access_token(
                 identity=str(user.id),
                 additional_claims={"name": user.first_name, "role": user.role}
             )
 
-            return jsonify({
+            return ({
                 "Success": True,
                 "message": "Token refreshed successfully",
                 "data": {
@@ -209,4 +208,4 @@ class TokenRefreshResource(Resource):
                 }
             }), 200
         except Exception as e:
-            return jsonify({"Success": False, "message": str(e)}), 500
+            return ({"Success": False, "message": str(e)}), 500
