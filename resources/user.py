@@ -47,34 +47,34 @@ class UserResources(Resource):
         try:
             if id is None:
                 users = User.query.all()
-                return jsonify({"Success": True, "data": [user.to_dict() for user in users]}), 200
+                return ({"Success": True, "data": [user.to_dict() for user in users]}), 200
             else:
                 user = User.query.get(id)
                 if not user:
-                    return jsonify({"Success": False, "message": "User not found"}), 404
-                return jsonify({"Success": True, "data": user.to_dict()}), 200
+                    return ({"Success": False, "message": "User not found"}), 404
+                return ({"Success": True, "data": user.to_dict()}), 200
         except Exception as e:
-            return jsonify({"Success": False, "message": str(e)}), 500
+            return ({"Success": False, "message": str(e)}), 500
 
     def post(self):
         data = self.parser.parse_args()
 
         # Validate email format
         if not self.validate_email(data["email"]):
-            return jsonify({"Success": False, "message": "Invalid email format"}), 400
+            return ({"Success": False, "message": "Invalid email format"}), 400
             
         # Validate password strength
         is_valid, message = self.validate_password(data["password"])
         if not is_valid:
-            return jsonify({"Success": False, "message": message}), 400
+            return ({"Success": False, "message": message}), 400
             
         # Check for existing email
         if User.query.filter_by(email=data["email"]).first():
-            return jsonify({"Success": False, "message": "Email address already taken"}), 409
+            return ({"Success": False, "message": "Email address already taken"}), 409
 
         # Check for existing phone number
         if User.query.filter_by(phone_number=data["phone_number"]).first():
-            return jsonify({"Success": False, "message": "Phone number already taken"}), 409
+            return ({"Success": False, "message": "Phone number already taken"}), 409
 
         try:
             # Hash password
@@ -96,7 +96,7 @@ class UserResources(Resource):
                 additional_claims={"name": user.first_name, "role": user.role}
             )
             
-            return jsonify({
+            return ({
                 "Success": True,
                 "data": {
                     "user": user.to_dict(),
@@ -107,14 +107,14 @@ class UserResources(Resource):
 
         except Exception as e:
             db.session.rollback()
-            return jsonify({"Success": False, "message": f"Error creating user: {str(e)}"}), 500
+            return ({"Success": False, "message": f"Error creating user: {str(e)}"}), 500
 
     @jwt_required()
     def patch(self, id):
         try:
             user = User.query.get(id)
             if not user:
-                return jsonify({"Success": False, "message": "User not found"}), 404
+                return ({"Success": False, "message": "User not found"}), 404
 
             data = self.parser.parse_args()
 
@@ -130,26 +130,26 @@ class UserResources(Resource):
                 user.phone_number = data['phone_number']
 
             db.session.commit()
-            return jsonify(
+            return (
                 {"Success": True, "message": "User updated successfully", "data": user.to_dict()}
             ), 200
         except Exception as e:
             db.session.rollback()
-            return jsonify({"Success": False, "message": str(e)}), 500
+            return ({"Success": False, "message": str(e)}), 500
 
     @jwt_required()
     def delete(self, id):
         try:
             user = User.query.get(id)
             if user is None:
-                return jsonify({"Success": False, "message": "User not found"}), 404
+                return ({"Success": False, "message": "User not found"}), 404
 
             db.session.delete(user)
             db.session.commit()
-            return jsonify({"Success": True, "message": "User successfully deleted"}), 200
+            return ({"Success": True, "message": "User successfully deleted"}), 200
         except Exception as e:
             db.session.rollback()
-            return jsonify({"Success": False, "message": str(e)}), 500
+            return ({"Success": False, "message": str(e)}), 500
 
 class LoginResource(Resource):
     parser = reqparse.RequestParser()
@@ -162,7 +162,7 @@ class LoginResource(Resource):
             user = User.query.filter_by(email=data["email"]).first()
 
             if not user or not check_password_hash(user.password, data['password']):
-                return jsonify({"Success": False, "message": "Incorrect email or password"}), 401
+                return ({"Success": False, "message": "Incorrect email or password"}), 401
 
             access_token = create_access_token(
                 identity=str(user.id),
