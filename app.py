@@ -20,7 +20,8 @@ load_dotenv()
 app = Flask(__name__)
 
 # configuring our flask app through the config object
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SUPABASE_URL")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+#app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SUPABASE_URL")
 app.config["SQLALCHEMY_ECHO"] = True
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -74,7 +75,7 @@ def after_request(response):
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
 
 
 

@@ -2,9 +2,9 @@
 from flask_restful import Resource
 from flask import request
 from datetime import datetime
-from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
-from models import db, Report, StatusUpdate,User
-from sqlalchemy.exc import SQLAlchemyError
+from flask_jwt_extended import jwt_required, get_jwt
+from models import db, Report, StatusUpdate
+#from sqlalchemy.exc import SQLAlchemyError
 
 class ReportStatusUpdateResource(Resource):
     @jwt_required(optional=True)
