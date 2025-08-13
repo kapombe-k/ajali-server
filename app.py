@@ -27,11 +27,11 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # access token and JWT configuration
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET") 
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=2)
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=7)
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]  # Enable JWT in cookies
 app.config["JWT_COOKIE_SECURE"] = True  # Only send over HTTPS
 app.config["JWT_COOKIE_CSRF_PROTECT"] = True  # Enable CSRF protection
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=2)
-app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=7)
 app.config["JWT_COOKIE_SAMESITE"] = "Lax"
 app.config["BUNDLE_ERRORS"] = True
 
@@ -76,13 +76,3 @@ def after_request(response):
 
 if __name__ == "__main__":
     app.run()
-
-
-
-
-
-
-
-
-
-

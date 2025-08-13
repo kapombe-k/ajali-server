@@ -36,7 +36,6 @@ class User(db.Model, SerializerMixin):
         return self.role == "admin"
 
     reports = db.relationship("Report", back_populates="user", cascade="all, delete")
-
     emergency_contacts = db.relationship( "EmergencyContact", back_populates="user", cascade="all, delete" )
     # status_updates = db.relationship('StatusUpdates', back_populates='admin', cascade='all, delete')
 
@@ -54,12 +53,9 @@ class Report(db.Model, SerializerMixin):
     created_at = db.Column(db.TIMESTAMP)
 
     user = db.relationship("User", back_populates="reports")
-
     location = db.relationship( "Location", back_populates="report", uselist=False, cascade="all, delete" )
-    media_attachments = db.relationship(  "MediaAttachment", back_populates="report", cascade="all, delete" )
-  
+    media_attachments = db.relationship(  "MediaAttachment", back_populates="report", cascade="all, delete" )  
     status_updates = db.relationship('StatusUpdate', back_populates='report', cascade='all, delete')
-
 
 class EmergencyContact(db.Model, SerializerMixin):
     __tablename__ = "emergency_contacts"
@@ -120,9 +116,9 @@ class StatusUpdate(db.Model):
     __tablename__ = "status_updates"
 
     id = db.Column(db.Integer, primary_key=True)
-    report_id = db.Column(db.Integer, db.ForeignKey("reports.id"), nullable=False)
     updated_by = db.Column(db.String, nullable=False)
     status = db.Column(db.String, nullable=False)
     timestamp = db.Column(db.DateTime, nullable=False)
 
+    report_id = db.Column(db.Integer, db.ForeignKey("reports.id"), nullable=False)
     report = db.relationship('Report', back_populates='status_updates')
