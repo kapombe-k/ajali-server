@@ -67,7 +67,7 @@ api.add_resource(ReportStatusUpdateResource, "/reports/<int:report_id>/status")
 @app.after_request
 def after_request(response):
     # CORS headers
-    response.headers.add('Access-Control-Allow-Origin', 'BASE_URL')
+    response.headers.add('Access-Control-Allow-Origin', BASE_URL)
     response.headers.add('Access-Control-Allow-Credentials', 'true')
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
