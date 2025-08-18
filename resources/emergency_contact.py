@@ -1,46 +1,71 @@
 
-from flask import Blueprint, request, jsonify
+from flask_restful import Resource, reqparse
 from models import db, EmergencyContact
 
-emergency_contact_bp = Blueprint('emergency_contact', __name__)
-
-@emergency_contact_bp.route('/', methods=['GET'])
-def get_contacts():
-    contacts = EmergencyContact.query.all()
-    return jsonify([c.to_dict() for c in contacts]), 200
-
-@emergency_contact_bp.route('/<int:id>', methods=['GET'])
-def get_contact(id):
-    contact = EmergencyContact.query.get_or_404(id)
-    return jsonify(contact.to_dict()), 200
-
-@emergency_contact_bp.route('/', methods=['POST'])
-def create_contact():
-    data = request.get_json()
-    contact = EmergencyContact(
-        name=data['name'],
-        relationship=data['relationship'],
-        phone_number=data['phone_number'],
-        email=data.get('email'),
-        address=data.get('address')
-    )
-    db.session.add(contact)
-    db.session.commit()
-    return jsonify(contact.to_dict()), 201
-
-@emergency_contact_bp.route('/<int:id>', methods=['PATCH'])
-def update_contact(id):
-    contact = EmergencyContact.query.get_or_404(id)
-    data = request.get_json()
-    for field in ['name', 'relationship', 'phone_number', 'email', 'address']:
-        if field in data:
-            setattr(contact, field, data[field])
-    db.session.commit()
-    return jsonify(contact.to_dict()), 200
-
-@emergency_contact_bp.route('/<int:id>', methods=['DELETE'])
-def delete_contact(id):
-    contact = EmergencyContact.query.get_or_404(id)
-    db.session.delete(contact)
-    db.session.commit()
-    return {'message': 'Deleted successfully'}, 204
+class EmergencyContactResource(Resource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('name', type=str, required=True, help='Name is required')
+    parser.add_argument('relationship', type=str, required=True, help='Relationship is required')
+    parser.add_argument('phone_number', type=str, required=True, help='Phone number is required')
+    parser.add_argument('email', type=str, required=False)
+    parser.add_argument('address', type=str, required=False)
+    
+    def get(self, id=None):
+        try:
+            if id is None:
+                contacts = EmergencyContact.query.all()
+                return {"Success": True, "data": [c.to_dict() for c in contacts]}, 200
+            else:
+                contact = EmergencyContact.query.get(id)
+                if not contact:
+                    return {"Success": False, "message": "Emergency contact not found"}, 404
+                return {"Success": True, "data": contact.to_dict()}, 200
+        except Exception as e:
+            return {"Success": False, "message": "Error fetching emergency contact"}, 500
+    
+    def post(self):
+        try:
+            data = EmergencyContactResource.parser.parse_args()
+            contact = EmergencyContact(
+                name=data['name'],
+                relationship=data['relationship'],
+                phone_number=data['phone_number'],
+                email=data.get('email'),
+                address=data.get('address')
+            )
+            db.session.add(contact)
+            db.session.commit()
+            return {"Success": True, "data": contact.to_dict()}, 201
+        except Exception as e:
+            db.session.rollback()
+            return {"Success": False, "message": "Error creating emergency contact"}, 500
+    
+    def patch(self, id):
+        try:
+            contact = EmergencyContact.query.get(id)
+            if not contact:
+                return {"Success": False, "message": "Emergency contact not found"}, 404
+            
+            data = EmergencyContactResource.parser.parse_args()
+            for field in ['name', 'relationship', 'phone_number', 'email', 'address']:
+                if field in data and data[field] is not None:
+                    setattr(contact, field, data[field])
+            
+            db.session.commit()
+            return {"Success": True, "data": contact.to_dict()}, 200
+        except Exception as e:
+            db.session.rollback()
+            return {"Success": False, "message": "Error updating emergency contact"}, 500
+    
+    def delete(self, id):
+        try:
+            contact = EmergencyContact.query.get(id)
+            if not contact:
+                return {"Success": False, "message": "Emergency contact not found"}, 404
+            
+            db.session.delete(contact)
+            db.session.commit()
+            return {"Success": True, "message": "Emergency contact deleted successfully"}, 200
+        except Exception as e:
+            db.session.rollback()
+            return {"Success": False, "message": "Error deleting emergency contact"}, 500

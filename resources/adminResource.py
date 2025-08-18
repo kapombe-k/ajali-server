@@ -19,66 +19,72 @@ def is_admin(user_id):
 class AdminResource(Resource):
     @jwt_required()
     def get(self, report_id=None):
-        current_user = get_jwt_identity()
+        try:
+            current_user = get_jwt_identity()
 
-        if not is_admin(current_user):
-            return {"message": "Admin access required"}, 403
+            if not is_admin(current_user):
+                return {"Success": False, "message": "Admin access required"}, 403
 
-        if report_id:
-            report = Report.query.get(report_id)
-            if not report:
-                return {"message": "report not found"}, 404
-            return self.serialize_report(report), 200
+            if report_id:
+                report = Report.query.get(report_id)
+                if not report:
+                    return {"Success": False, "message": "Report not found"}, 404
+                return {"Success": True, "data": self.serialize_report(report)}, 200
 
-        page = request.args.get("page", default=1, type=int)
-        per_page = min(request.args.get("per_page", default=10, type=int), 100)
+            page = request.args.get("page", default=1, type=int)
+            per_page = min(request.args.get("per_page", default=10, type=int), 100)
 
-        reports = Report.query.paginate(
-            page=page, per_page=per_page, error_out=False
-        ).items
-        return {"reports": [self.serialize_report(r) for r in reports]}, 200
+            reports = Report.query.paginate(
+                page=page, per_page=per_page, error_out=False
+            ).items
+            return {"Success": True, "data": {"reports": [self.serialize_report(r) for r in reports]}}, 200
+        except Exception as e:
+            current_app.logger.error(f"Error fetching reports: {str(e)}")
+            return {"Success": False, "message": "An error occurred while fetching reports"}, 500
 
     @jwt_required()
     def patch(self, report_id):
-        current_user = get_jwt_identity()
-
-        if not is_admin(current_user):
-            return {"message": "Admin access required"}, 403
-
-        report = Report.query.get(report_id)
-        if not report:
-            return {"message": "report not found"}, 404
-
-        parser = reqparse.RequestParser()
-        parser.add_argument("status", required=True, help="Status is required")
-        args = parser.parse_args()
-
-        valid_statuses = ["pending", "under investigation", "rejected", "resolved"]
-        if args["status"] not in valid_statuses:
-            return {"message": "Invalid status"}, 400
-
-        old_status = report.status
-        new_status = args["status"]
-
         try:
+            current_user = get_jwt_identity()
+
+            if not is_admin(current_user):
+                return {"Success": False, "message": "Admin access required"}, 403
+
+            report = Report.query.get(report_id)
+            if not report:
+                return {"Success": False, "message": "Report not found"}, 404
+
+            parser = reqparse.RequestParser()
+            parser.add_argument("status", required=True, help="Status is required")
+            args = parser.parse_args()
+
+            valid_statuses = ["pending", "under investigation", "rejected", "resolved"]
+            if args["status"] not in valid_statuses:
+                return {"Success": False, "message": "Invalid status"}, 400
+
+            old_status = report.status
+            new_status = args["status"]
+
             report.status = new_status
             report.updated_at = datetime.now(timezone.utc)
             db.session.commit()
 
-            self.notify_user(report, old_status, new_status)
+            # self.notify_user(report, old_status, new_status)
 
             current_app.logger.info(
                 f"Admin {current_user} updated report #{report.id} from {old_status} to {new_status}"
             )
 
             return {
+                "Success": True,
                 "message": f"Status updated from {old_status} to {new_status}",
-                "report": {
-                    "id": report.id,
-                    "title": report.title,
-                    "status": report.status,
-                    "user_id": report.user_id,
-                },
+                "data": {
+                    "report": {
+                        "id": report.id,
+                        "status": report.status,
+                        "user_id": report.user_id,
+                    }
+                }
             }, 200
 
         except Exception as e:
@@ -86,42 +92,40 @@ class AdminResource(Resource):
             current_app.logger.error(
                 f"Admin {current_user} failed to update report #{report.id}: {str(e)}"
             )
-            return {"message": f"Error updating status: {str(e)}"}, 500
+            return {"Success": False, "message": "An error occurred while updating the report status"}, 500
 
     @jwt_required()
     def delete(self, report_id):
-        current_user = get_jwt_identity()
-
-        if not is_admin(current_user):
-            return {"message": "Admin access required"}, 403
-
-        report = Report.query.get(report_id)
-        if not report:
-            return {"message": "report not found"}, 404
-
         try:
+            current_user = get_jwt_identity()
+
+            if not is_admin(current_user):
+                return {"Success": False, "message": "Admin access required"}, 403
+
+            report = Report.query.get(report_id)
+            if not report:
+                return {"Success": False, "message": "Report not found"}, 404
+
             db.session.delete(report)
             db.session.commit()
             current_app.logger.info(f"Admin {current_user} deleted report #{report.id}")
 
-            return {"message": f"report #{report_id} deleted successfully"}, 200
+            return {"Success": True, "message": f"Report #{report_id} deleted successfully"}, 200
 
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(
                 f"Admin {current_user} failed to delete report #{report.id}: {str(e)}"
             )
-            return {"message": f"Error deleting report: {str(e)}"}, 500
+            return {"Success": False, "message": "An error occurred while deleting the report"}, 500
 
     def serialize_report(self, report):
         return {
             "id": report.id,
-            "type": report.type,
-            "title": report.title,
-            "description": report.description,
+            "incident": report.incident,
+            "details": report.details,
             "latitude": report.latitude,
             "longitude": report.longitude,
-            "images": report.images or [],
             "status": report.status,
             "created_at": report.created_at.isoformat() if report.created_at else None,
             "updated_at": report.updated_at.isoformat() if report.updated_at else None,

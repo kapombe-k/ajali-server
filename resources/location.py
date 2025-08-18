@@ -10,56 +10,54 @@ class LocationResource(Resource):
     parser.add_argument('report_id', type=int, required=True, help='Report ID is required')
 
     def get(self, location_id=None):
-        if location_id:
-            location = Location.query.get(location_id)
-            if location:
-                return location.to_dict()
-            return {"message": "Location not found"}, 404
+        try:
+            if location_id:
+                location = Location.query.get(location_id)
+                if location:
+                    return {"Success": True, "data": location.to_dict()}, 200
+                return {"Success": False, "message": "Location not found"}, 404
 
-        locations = Location.query.all()
-        return [loc.to_dict() for loc in locations]
+            locations = Location.query.all()
+            return {"Success": True, "data": [loc.to_dict() for loc in locations]}, 200
+        except Exception as e:
+            return {"Success": False, "message": "An error occurred while fetching locations"}, 500
 
     def post(self):
-        data = LocationResource.parser.parse_args()
-
         try:
+            data = LocationResource.parser.parse_args()
             location = Location(**data)
             db.session.add(location)
             db.session.commit()
-            return location.to_dict(), 201
+            return {"Success": True, "data": location.to_dict()}, 201
         except Exception as e:
-            return {'message': str(e)}, 400
-        except SQLAlchemyError:
             db.session.rollback()
-            return {'message': 'Database error'}, 500
+            return {"Success": False, "message": "An error occurred while creating location"}, 500
 
     def patch(self, location_id):
-        location = Location.query.get(location_id)
-        if not location:
-            return {"message": "Location not found"}, 404
-
-        data = LocationResource.parser.parse_args()
-        for key, value in data.items():
-            setattr(location, key, value)
-
         try:
+            location = Location.query.get(location_id)
+            if not location:
+                return {"Success": False, "message": "Location not found"}, 404
+
+            data = LocationResource.parser.parse_args()
+            for key, value in data.items():
+                setattr(location, key, value)
+
             db.session.commit()
-            return location.to_dict()
+            return {"Success": True, "data": location.to_dict()}, 200
         except Exception as e:
-            return {"message": str(e)}, 400
-        except SQLAlchemyError:
             db.session.rollback()
-            return {"message": "Database error"}, 500
+            return {"Success": False, "message": "An error occurred while updating location"}, 500
 
     def delete(self, location_id):
-        location = Location.query.get(location_id)
-        if not location:
-            return {"message": "Location not found"}, 404
-
         try:
+            location = Location.query.get(location_id)
+            if not location:
+                return {"Success": False, "message": "Location not found"}, 404
+
             db.session.delete(location)
             db.session.commit()
-            return {"message": "Location deleted"}
-        except SQLAlchemyError:
+            return {"Success": True, "message": "Location deleted successfully"}, 200
+        except Exception as e:
             db.session.rollback()
-            return {"message": "Database error"}, 500
+            return {"Success": False, "message": "An error occurred while deleting location"}, 500

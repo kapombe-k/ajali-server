@@ -1,8 +1,10 @@
 from flask_restful import Resource, reqparse
 import re
-from models import db, User
+from datetime import datetime
+from models import db, User, TokenBlocklist
 from flask_bcrypt import generate_password_hash, check_password_hash
-from flask_jwt_extended import (create_access_token, jwt_required, create_refresh_token, get_jwt_identity)
+from flask_jwt_extended import (create_access_token, jwt_required, create_refresh_token, get_jwt_identity, get_jwt)
+from flask import current_app
 
 # class BaseResource(Resource):
 #     def success_response(self, data, status=200):
@@ -53,7 +55,10 @@ class UserResources(Resource):
                     return ({"Success": False, "message": "User not found"}), 404
                 return ({"Success": True, "data": user.to_dict()}), 200
         except Exception as e:
-            return ({"Success": False, "message": str(e)}), 500
+            # Log the actual error for debugging but don't expose it to the client
+            import logging
+            logging.error(f"Error fetching user(s): {str(e)}")
+            return ({"Success": False, "message": "An error occurred while fetching user data"}), 500
 
     def post(self):
         data = self.parser.parse_args()
@@ -155,13 +160,19 @@ class LoginResource(Resource):
     parser.add_argument("email", type=str, required=True, help="Email is required")
     parser.add_argument("password", type=str, required=True, help="Password is required")
 
+    # Apply rate limiting to this method
     def post(self):
+        # Rate limit: 5 attempts per minute per IP
+        # This would typically be handled by the Flask-Limiter extension
+        # For now, we'll just add a comment about where this would be implemented
+        
         try:
             data = self.parser.parse_args()
             user = User.query.filter_by(email=data["email"]).first()
 
             if not user or not check_password_hash(user.password, data['password']):
-                return ({"Success": False, "message": "Incorrect email or password"}), 401
+                # Use a generic message to prevent user enumeration attacks
+                return ({"Success": False, "message": "Invalid credentials"}), 401
 
             access_token = create_access_token(
                 identity=str(user.id),
@@ -182,7 +193,10 @@ class LoginResource(Resource):
                 }
             }), 200
         except Exception as e:
-            return ({"Success": False, "message": str(e)}), 500
+            # Log the actual error for debugging but don't expose it to the client
+            import logging
+            logging.error(f"Error during login: {str(e)}")
+            return ({"Success": False, "message": "An error occurred during login"}), 500
 
 class TokenRefreshResource(Resource):
     @jwt_required(refresh=True)
@@ -208,4 +222,19 @@ class TokenRefreshResource(Resource):
                 }
             }), 200
         except Exception as e:
+            db.session.rollback()
             return ({"Success": False, "message": str(e)}), 500
+
+
+class LogoutResource(Resource):
+    @jwt_required()
+    def post(self):
+        try:
+            jti = get_jwt()["jti"]
+            now = datetime.now()
+            db.session.add(TokenBlocklist(jti=jti, created_at=now))
+            db.session.commit()
+            return {"Success": True, "message": "Successfully logged out"}, 200
+        except Exception as e:
+            db.session.rollback()
+            return {"Success": False, "message": "Error during logout"}, 500

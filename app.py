@@ -7,11 +7,15 @@ from datetime import timedelta
 from models import db
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 from resources.user import UserResources, LoginResource, TokenRefreshResource
 from resources.status_update import ReportStatusUpdateResource
 from resources.report import ReportResource
 from resources.location import LocationResource
+from datetime import datetime
+from models import TokenBlocklist
 
 
 # import the configs stored inside the env file
@@ -26,12 +30,12 @@ app.config["SQLALCHEMY_ECHO"] = True
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # access token and JWT configuration
-app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET") 
+app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=2)
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=7)
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
-app.config["JWT_COOKIE_SECURE"] = True 
-app.config["JWT_COOKIE_CSRF_PROTECT"] = True  
+app.config["JWT_COOKIE_SECURE"] = True
+app.config["JWT_COOKIE_CSRF_PROTECT"] = True
 app.config["JWT_COOKIE_SAMESITE"] = "Lax"
 app.config["BUNDLE_ERRORS"] = True
 
@@ -42,15 +46,42 @@ api = Api(app)
 migrate = Migrate(app, db)
 db.init_app(app)
 
+# Initialize rate limiter
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["1000 per day", "100 per hour"]
+)
+
+# JWT token revocation callback
+@jwt.token_in_blocklist_loader
+def check_if_token_revoked(jwt_header, jwt_payload):
+    jti = jwt_payload["jti"]
+    token = TokenBlocklist.query.filter_by(jti=jti).first()
+    return token is not None
+
+# Callback function for expired tokens
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):
+    return {"Success": False, "message": "Token has expired"}, 401
+
+# Callback function for invalid tokens
+@jwt.invalid_token_loader
+def invalid_token_callback(error):
+    return {"Success": False, "message": "Invalid token"}, 401
+
+# Callback function for revoked tokens
+@jwt.revoked_token_loader
+def revoked_token_callback(jwt_header, jwt_payload):
+    return {"Success": False, "message": "Token has been revoked"}, 401
+
 # CORS Configuration
 BASE_URL = os.environ.get("BASE_URL")
-app.config["CORS_SUPPORTS_CREDENTIALS"] = True
-app.config["CORS_ORIGINS"] = [BASE_URL]
 
 # CORS setup with proper credentials support
 CORS(
     app,
-    resources={r"/*": {"origins": 'BASE_URL'}},
+    resources={r"/*": {"origins": BASE_URL}},
     supports_credentials=True,
     allow_headers=["Content-Type", "Authorization", "X-CSRF-Token"],
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
@@ -60,8 +91,16 @@ CORS(
 api.add_resource(UserResources, "/users", "/users/<int:id>")
 api.add_resource(LoginResource, "/login")
 api.add_resource(TokenRefreshResource, "/token/refresh")
+from resources.user import LogoutResource
+api.add_resource(LogoutResource, "/logout")
 api.add_resource(ReportResource, "/reports", "/reports/<int:report_id>")
+from resources.report import MediaResource
+api.add_resource(MediaResource, "/reports/<int:report_id>/media")
 api.add_resource(LocationResource, "/locations", "/locations/<int:location_id>")
+from resources.emergency_contact import EmergencyContactResource
+api.add_resource(EmergencyContactResource, "/emergency-contacts", "/emergency-contacts/<int:id>")
+from resources.adminResource import AdminResource
+api.add_resource(AdminResource, "/admin/reports", "/admin/reports/<int:report_id>")
 api.add_resource(ReportStatusUpdateResource, "/reports/<int:report_id>/status")
 
 @app.after_request
@@ -69,8 +108,14 @@ def after_request(response):
     # CORS headers
     response.headers.add('Access-Control-Allow-Origin', BASE_URL)
     response.headers.add('Access-Control-Allow-Credentials', 'true')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-CSRF-Token')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    
+    # Security headers
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    
     return response
 
 
