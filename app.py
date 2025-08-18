@@ -50,13 +50,13 @@ app.config["CORS_ORIGINS"] = [BASE_URL]
 # CORS setup with proper credentials support
 CORS(
     app,
-    resources={r"/*": {"origins": BASE_URL}},
+    resources={r"/*": {"origins": 'BASE_URL'}},
     supports_credentials=True,
     allow_headers=["Content-Type", "Authorization", "X-CSRF-Token"],
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 )
 
-# Register resource routes
+# Resource routes
 api.add_resource(UserResources, "/users", "/users/<int:id>")
 api.add_resource(LoginResource, "/login")
 api.add_resource(TokenRefreshResource, "/token/refresh")
@@ -66,8 +66,8 @@ api.add_resource(ReportStatusUpdateResource, "/reports/<int:report_id>/status")
 
 @app.after_request
 def after_request(response):
-    # Ensure responses have proper CORS headers
-    response.headers.add('Access-Control-Allow-Origin', BASE_URL)
+    # CORS headers
+    response.headers.add('Access-Control-Allow-Origin', 'BASE_URL')
     response.headers.add('Access-Control-Allow-Credentials', 'true')
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
