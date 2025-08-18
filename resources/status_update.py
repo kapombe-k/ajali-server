@@ -39,7 +39,7 @@ class ReportStatusUpdateResource(Resource):
     def post(self, report_id):
         claims = get_jwt()
         role = claims.get("role")
-        updated_by = claims.get("sub")  # typically user ID or identity
+        updated_by = claims.get("sub") 
 
         if role != "admin":
             return {"message": "Admin access required"}, 403
@@ -59,7 +59,7 @@ class ReportStatusUpdateResource(Resource):
                 report_id=report_id,
                 updated_by=updated_by,
                 status=new_status,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.timezone.utc()
             )
             report.status = new_status
 

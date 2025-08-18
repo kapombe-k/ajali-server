@@ -29,9 +29,9 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET") 
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=2)
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=7)
-app.config["JWT_TOKEN_LOCATION"] = ["cookies"]  # Enable JWT in cookies
-app.config["JWT_COOKIE_SECURE"] = True  # Only send over HTTPS
-app.config["JWT_COOKIE_CSRF_PROTECT"] = True  # Enable CSRF protection
+app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config["JWT_COOKIE_SECURE"] = True 
+app.config["JWT_COOKIE_CSRF_PROTECT"] = True  
 app.config["JWT_COOKIE_SAMESITE"] = "Lax"
 app.config["BUNDLE_ERRORS"] = True
 
@@ -43,16 +43,16 @@ migrate = Migrate(app, db)
 db.init_app(app)
 
 # CORS Configuration
-FRONTEND_URL = os.environ.get("FRONTEND_URL")
+BASE_URL = os.environ.get("BASE_URL")
 app.config["CORS_SUPPORTS_CREDENTIALS"] = True
-app.config["CORS_ORIGINS"] = [FRONTEND_URL]
+app.config["CORS_ORIGINS"] = [BASE_URL]
 
 # CORS setup with proper credentials support
 CORS(
     app,
-    resources={r"/*": {"origins": FRONTEND_URL}},
+    resources={r"/*": {"origins": BASE_URL}},
     supports_credentials=True,
-    allow_headers=["Content-Type", "Authorization"],
+    allow_headers=["Content-Type", "Authorization", "X-CSRF-Token"],
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 )
 
@@ -67,7 +67,7 @@ api.add_resource(ReportStatusUpdateResource, "/reports/<int:report_id>/status")
 @app.after_request
 def after_request(response):
     # Ensure responses have proper CORS headers
-    response.headers.add('Access-Control-Allow-Origin', FRONTEND_URL)
+    response.headers.add('Access-Control-Allow-Origin', BASE_URL)
     response.headers.add('Access-Control-Allow-Credentials', 'true')
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
