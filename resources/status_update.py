@@ -1,4 +1,3 @@
-
 from flask_restful import Resource
 from flask import request
 from datetime import datetime
@@ -39,7 +38,7 @@ class ReportStatusUpdateResource(Resource):
             }
             return response, 200
         except Exception as e:
-            return {"Success": False, "message": "An error occurred while fetching report status"}, 500
+            return {"Success": False, "message": f"An error occurred while fetching report status: {str(e)}"}, 500
 
     @jwt_required()
     def post(self, report_id):
@@ -76,4 +75,4 @@ class ReportStatusUpdateResource(Resource):
 
         except Exception as e:
             db.session.rollback()
-            return {"Success": False, "message": "An error occurred while updating report status"}, 500
+            return {"Success": False, "message": f"An error occurred while updating report status: {str(e)}"}, 500

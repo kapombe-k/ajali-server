@@ -237,4 +237,4 @@ class LogoutResource(Resource):
             return {"Success": True, "message": "Successfully logged out"}, 200
         except Exception as e:
             db.session.rollback()
-            return {"Success": False, "message": "Error during logout"}, 500
+            return {"Success": False, "message": f"Error during logout: {str(e)}"}, 500

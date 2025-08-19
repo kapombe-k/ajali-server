@@ -1,4 +1,3 @@
-
 from flask_restful import Resource, reqparse
 from models import db, EmergencyContact
 
@@ -21,8 +20,8 @@ class EmergencyContactResource(Resource):
                     return {"Success": False, "message": "Emergency contact not found"}, 404
                 return {"Success": True, "data": contact.to_dict()}, 200
         except Exception as e:
-            return {"Success": False, "message": "Error fetching emergency contact"}, 500
-    
+            return {"Success": False, "message": f"Error fetching emergency contact: {str(e)}"}, 500
+
     def post(self):
         try:
             data = EmergencyContactResource.parser.parse_args()
@@ -38,8 +37,8 @@ class EmergencyContactResource(Resource):
             return {"Success": True, "data": contact.to_dict()}, 201
         except Exception as e:
             db.session.rollback()
-            return {"Success": False, "message": "Error creating emergency contact"}, 500
-    
+            return {"Success": False, "message": f"Error creating emergency contact: {str(e)}"}, 500
+
     def patch(self, id):
         try:
             contact = EmergencyContact.query.get(id)
@@ -55,8 +54,8 @@ class EmergencyContactResource(Resource):
             return {"Success": True, "data": contact.to_dict()}, 200
         except Exception as e:
             db.session.rollback()
-            return {"Success": False, "message": "Error updating emergency contact"}, 500
-    
+            return {"Success": False, "message": f"Error updating emergency contact: {str(e)}"}, 500
+
     def delete(self, id):
         try:
             contact = EmergencyContact.query.get(id)
@@ -68,4 +67,4 @@ class EmergencyContactResource(Resource):
             return {"Success": True, "message": "Emergency contact deleted successfully"}, 200
         except Exception as e:
             db.session.rollback()
-            return {"Success": False, "message": "Error deleting emergency contact"}, 500
+            return {"Success": False, "message": f"Error deleting emergency contact: {str(e)}"}, 500

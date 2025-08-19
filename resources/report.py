@@ -2,7 +2,6 @@ from flask_restful import Resource, reqparse
 from models import db, Report, MediaAttachment
 from flask import request, current_app
 from flask_jwt_extended import jwt_required, get_jwt
-from sqlalchemy.exc import SQLAlchemyError
 import uuid
 import os
 from datetime import datetime
@@ -122,7 +121,7 @@ class ReportResource(Resource):
             reports = Report.query.all()
             return {"Success": True, "data": [r.to_dict() for r in reports]}, 200
         except Exception as e:
-            return {"Success": False, "message": "An error occurred while fetching reports"}, 500
+            return {"Success": False, "message": f"An error occurred while fetching reports: {str(e)}"}, 500
 
     @jwt_required()
     def patch(self, report_id):
@@ -140,7 +139,7 @@ class ReportResource(Resource):
             return {"Success": True, "data": report.to_dict()}, 200
         except Exception as e:
             db.session.rollback()
-            return {"Success": False, "message": "An error occurred while updating report"}, 500
+            return {"Success": False, "message": f"An error occurred while updating report: {str(e)}"}, 500
 
     @jwt_required()
     def delete(self, report_id):
@@ -163,7 +162,7 @@ class ReportResource(Resource):
             return {"Success": True, "message": "Report deleted successfully"}, 200
         except Exception as e:
             db.session.rollback()
-            return {"Success": False, "message": "An error occurred while deleting report"}, 500
+            return {"Success": False, "message": f"An error occurred while deleting report: {str(e)}"}, 500
 
 
 class MediaResource(Resource):
@@ -175,7 +174,7 @@ class MediaResource(Resource):
                 return {"Success": True, "data": [m.to_dict() for m in media]}, 200
             return {"Success": False, "message": "Report not found"}, 404
         except Exception as e:
-            return {"Success": False, "message": "An error occurred while fetching media"}, 500
+            return {"Success": False, "message": f"An error occurred while fetching media: {str(e)}"}, 500
 
     def post(self, report_id):
         try:
@@ -222,4 +221,4 @@ class MediaResource(Resource):
             return {"Success": True, "message": "Media deleted successfully"}, 200
         except Exception as e:
             db.session.rollback()
-            return {"Success": False, "message": "An error occurred while deleting media"}, 500
+            return {"Success": False, "message": f"An error occurred while deleting media: {str(e)}"}, 500

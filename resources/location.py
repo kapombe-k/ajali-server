@@ -1,6 +1,5 @@
 from flask_restful import Resource, reqparse
 from models import db, Location
-from sqlalchemy.exc import SQLAlchemyError
 
 class LocationResource(Resource):
     parser = reqparse.RequestParser()
@@ -20,7 +19,7 @@ class LocationResource(Resource):
             locations = Location.query.all()
             return {"Success": True, "data": [loc.to_dict() for loc in locations]}, 200
         except Exception as e:
-            return {"Success": False, "message": "An error occurred while fetching locations"}, 500
+            return {"Success": False, "message": f"An error occurred while fetching locations: {str(e)}"}, 500
 
     def post(self):
         try:
@@ -31,7 +30,7 @@ class LocationResource(Resource):
             return {"Success": True, "data": location.to_dict()}, 201
         except Exception as e:
             db.session.rollback()
-            return {"Success": False, "message": "An error occurred while creating location"}, 500
+            return {"Success": False, "message": f"An error occurred while creating location: {str(e)}"}, 500
 
     def patch(self, location_id):
         try:
@@ -47,7 +46,7 @@ class LocationResource(Resource):
             return {"Success": True, "data": location.to_dict()}, 200
         except Exception as e:
             db.session.rollback()
-            return {"Success": False, "message": "An error occurred while updating location"}, 500
+            return {"Success": False, "message": f"An error occurred while updating location: {str(e)}"}, 500
 
     def delete(self, location_id):
         try:
@@ -60,4 +59,4 @@ class LocationResource(Resource):
             return {"Success": True, "message": "Location deleted successfully"}, 200
         except Exception as e:
             db.session.rollback()
-            return {"Success": False, "message": "An error occurred while deleting location"}, 500
+            return {"Success": False, "message": f"An error occurred while deleting location: {str(e)}"}, 500
