@@ -105,20 +105,20 @@ api.add_resource(EmergencyContactResource, "/emergency-contacts", "/emergency-co
 api.add_resource(AdminResource, "/admin/reports", "/admin/reports/<int:report_id>")
 api.add_resource(ReportStatusUpdateResource, "/reports/<int:report_id>/status")
 
-@app.after_request
-def after_request(response):
-    # CORS headers
-    response.headers.add('Access-Control-Allow-Origin')
-    response.headers.add('Access-Control-Allow-Credentials', 'true')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-CSRF-Token')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+# @app.after_request
+# def after_request(response):
+#     # CORS headers
+#     response.headers.add('Access-Control-Allow-Origin')
+#     response.headers.add('Access-Control-Allow-Credentials', 'true')
+#     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-CSRF-Token')
+#     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     
-    # Security headers
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
-    response.headers['X-XSS-Protection'] = '1; mode=block'
+#     # Security headers
+#     response.headers['X-Content-Type-Options'] = 'nosniff'
+#     response.headers['X-Frame-Options'] = 'DENY'
+#     response.headers['X-XSS-Protection'] = '1; mode=block'
     
-    return response
+#     return response
 
 
 if __name__ == "__main__":
