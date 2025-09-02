@@ -159,6 +159,39 @@ class UserResources(Resource):
             db.session.rollback()
             return ({"Success": False, "message": str(e)}), 500
 
+
+class UserReportsResource(Resource):
+    """Resource for getting reports by a specific user"""
+
+    @jwt_required()
+    def get(self, user_id):
+        try:
+            # Verify the requesting user can only access their own reports (unless admin)
+            current_user_id = get_jwt_identity()
+            claims = get_jwt()
+            user_role = claims.get("role")
+
+            # Allow admins to view any user's reports, but regular users can only view their own
+            if user_role != "admin" and str(current_user_id) != str(user_id):
+                return ({"Success": False, "message": "Access denied"}), 403
+
+            # Get the user to make sure they exist
+            user = User.query.get(user_id)
+            if not user:
+                return ({"Success": False, "message": "User not found"}), 404
+
+            # Get all reports for this user
+            reports = user.reports
+            return ({
+                "Success": True,
+                "data": [report.to_dict() for report in reports]
+            }), 200
+
+        except Exception as e:
+            import logging
+            logging.error(f"Error fetching reports for user {user_id}: {str(e)}")
+            return ({"Success": False, "message": "An error occurred while fetching reports"}), 500
+
 class LoginResource(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument("email", type=str, required=True, help="Email is required")

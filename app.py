@@ -15,7 +15,7 @@ from flask_limiter.util import get_remote_address
 
 #resource imports
 from models import db, TokenBlocklist
-from resources.user import UserResources, LoginResource, TokenRefreshResource
+from resources.user import UserResources, LoginResource, TokenRefreshResource, UserReportsResource
 from resources.status_update import ReportStatusUpdateResource
 from resources.emergency_contact import EmergencyContactResource
 from resources.report import ReportResource
@@ -100,17 +100,25 @@ CORS(
                 "http://127.0.0.1:5000",
                 "http://localhost:5173",
                 "https://localhost:5173",
+                "https://ajali.vercel.app",  # Production frontend
                 BASE_URL
-            ] if BASE_URL else ["http://127.0.0.1:5000", "http://localhost:5173", "https://localhost:5173"],
+            ] if BASE_URL else [
+                "http://127.0.0.1:5000",
+                "http://localhost:5173",
+                "https://localhost:5173",
+                "https://ajali.vercel.app"  # Production frontend
+            ],
             "supports_credentials": True,
-            "allow_headers": ["Content-Type", "Authorization", "X-CSRF-Token"],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+            "allow_headers": ["Content-Type", "Authorization", "X-CSRF-Token", "Accept"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "expose_headers": ["Access-Control-Allow-Origin"]
         }
     }
 )
 
 # Resource routes
 api.add_resource(UserResources, "/users", "/users/<int:id>")
+api.add_resource(UserReportsResource, "/users/<int:user_id>/reports")
 api.add_resource(LoginResource, "/login")
 api.add_resource(TokenRefreshResource, "/token/refresh")
 api.add_resource(LogoutResource, "/logout")
