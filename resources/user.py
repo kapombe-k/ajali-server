@@ -182,15 +182,120 @@ class UserReportsResource(Resource):
 
             # Get all reports for this user
             reports = user.reports
+
+            # Convert reports to dict format
+            reports_data = []
+            for report in reports:
+                try:
+                    report_dict = report.to_dict()
+                    reports_data.append(report_dict)
+                except Exception as e:
+                    # Log individual report serialization errors
+                    import logging
+                    logging.error(f"Error serializing report {report.id}: {str(e)}")
+                    continue
+
             return ({
                 "Success": True,
-                "data": [report.to_dict() for report in reports]
+                "data": reports_data
             }), 200
 
         except Exception as e:
             import logging
             logging.error(f"Error fetching reports for user {user_id}: {str(e)}")
-            return ({"Success": False, "message": "An error occurred while fetching reports"}), 500
+            # Return more detailed error for debugging
+            return ({
+                "Success": False,
+                "message": "An error occurred while fetching reports",
+                "error": str(e)
+            }), 500
+
+
+# class DebugUserReportsResource(Resource):
+#     """Debug resource for getting reports without JWT authentication"""
+
+#     def get(self, user_id):
+#         try:
+#             # Get the user to make sure they exist
+#             user = User.query.get(user_id)
+#             if not user:
+#                 return ({"Success": False, "message": "User not found"}), 404
+
+#             # Get all reports for this user
+#             reports = user.reports
+
+#             # Convert reports to dict format
+#             reports_data = []
+#             for report in reports:
+#                 try:
+#                     report_dict = report.to_dict()
+#                     reports_data.append(report_dict)
+#                 except Exception as e:
+#                     # Log individual report serialization errors
+#                     import logging
+#                     logging.error(f"Error serializing report {report.id}: {str(e)}")
+#                     continue
+
+#             return ({
+#                 "Success": True,
+#                 "data": reports_data,
+#                 "debug": f"Found {len(reports_data)} reports for user {user_id}"
+#             }), 200
+
+#         except Exception as e:
+#             import logging
+#             logging.error(f"Error fetching reports for user {user_id}: {str(e)}")
+#             # Return more detailed error for debugging
+#             return ({
+#                 "Success": False,
+#                 "message": "An error occurred while fetching reports",
+#                 "error": str(e),
+#                 "error_type": type(e).__name__
+#             }), 500
+#         try:
+#             # Verify the requesting user can only access their own reports (unless admin)
+#             current_user_id = get_jwt_identity()
+#             claims = get_jwt()
+#             user_role = claims.get("role")
+
+#             # Allow admins to view any user's reports, but regular users can only view their own
+#             if user_role != "admin" and str(current_user_id) != str(user_id):
+#                 return ({"Success": False, "message": "Access denied"}), 403
+
+#             # Get the user to make sure they exist
+#             user = User.query.get(user_id)
+#             if not user:
+#                 return ({"Success": False, "message": "User not found"}), 404
+
+#             # Get all reports for this user
+#             reports = user.reports
+
+#             # Convert reports to dict format
+#             reports_data = []
+#             for report in reports:
+#                 try:
+#                     report_dict = report.to_dict()
+#                     reports_data.append(report_dict)
+#                 except Exception as e:
+#                     # Log individual report serialization errors
+#                     import logging
+#                     logging.error(f"Error serializing report {report.id}: {str(e)}")
+#                     continue
+
+#             return ({
+#                 "Success": True,
+#                 "data": reports_data
+#             }), 200
+
+#         except Exception as e:
+#             import logging
+#             logging.error(f"Error fetching reports for user {user_id}: {str(e)}")
+#             # Return more detailed error for debugging
+#             return ({
+#                 "Success": False,
+#                 "message": "An error occurred while fetching reports",
+#                 "error": str(e)
+#             }), 500
 
 class LoginResource(Resource):
     parser = reqparse.RequestParser()

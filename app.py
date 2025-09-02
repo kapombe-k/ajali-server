@@ -15,7 +15,7 @@ from flask_limiter.util import get_remote_address
 
 #resource imports
 from models import db, TokenBlocklist
-from resources.user import UserResources, LoginResource, TokenRefreshResource, UserReportsResource
+from resources.user import UserResources, LoginResource, TokenRefreshResource, UserReportsResource, DebugUserReportsResource
 from resources.status_update import ReportStatusUpdateResource
 from resources.emergency_contact import EmergencyContactResource
 from resources.report import ReportResource
@@ -116,9 +116,31 @@ CORS(
     }
 )
 
+# # Test endpoint for debugging
+# @app.route("/test/db")
+# def test_db():
+#     try:
+#         # Test database connection
+#         db.engine.execute("SELECT 1")
+#         return {"status": "success", "message": "Database connection OK"}
+#     except Exception as e:
+#         return {"status": "error", "message": f"Database error: {str(e)}"}, 500
+
+# @app.route("/test/tables")
+# def test_tables():
+#     try:
+#         # Check if tables exist
+#         from sqlalchemy import inspect
+#         inspector = inspect(db.engine)
+#         tables = inspector.get_table_names()
+#         return {"status": "success", "tables": tables}
+#     except Exception as e:
+#         return {"status": "error", "message": f"Table check error: {str(e)}"}, 500
+
 # Resource routes
 api.add_resource(UserResources, "/users", "/users/<int:id>")
 api.add_resource(UserReportsResource, "/users/<int:user_id>/reports")
+# api.add_resource(DebugUserReportsResource, "/debug/users/<int:user_id>/reports")
 api.add_resource(LoginResource, "/login")
 api.add_resource(TokenRefreshResource, "/token/refresh")
 api.add_resource(LogoutResource, "/logout")
