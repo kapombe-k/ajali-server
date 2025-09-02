@@ -70,17 +70,34 @@ class ReportResource(Resource):
         # Validate required fields
         if not data or "user_id" not in data:
             return {"message": "user_id is required"}, 400
-            
+
         if not args["incident"]:
             return {"message": "incident is required"}, 400
 
+        # Validate details field
+        details = args.get("details", "").strip()
+        if not details:
+            return {"message": "details are required and cannot be empty"}, 400
+
+        # Validate and convert user_id to integer
+        try:
+            user_id = int(data["user_id"])
+        except (ValueError, TypeError):
+            return {"message": "user_id must be a valid integer"}, 400
+
+        # Validate that user exists
+        from models import User
+        user = User.query.get(user_id)
+        if not user:
+            return {"message": "User not found"}, 404
+
         try:
             report = Report(
-                user_id=data["user_id"],
+                user_id=user_id,
                 incident=args["incident"],
-                details=args.get("details"),
-                latitude=float(data["latitude"]) if data.get("latitude") else 0.0,
-                longitude=float(data["longitude"]) if data.get("longitude") else 0.0,
+                details=details,  # Use validated details
+                latitude=float(data.get("latitude", 0.0)) or 0.0,
+                longitude=float(data.get("longitude", 0.0)) or 0.0,
             )
             db.session.add(report)
             db.session.commit()
@@ -102,7 +119,9 @@ class ReportResource(Resource):
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Error creating report: {str(e)}")
-            return {"message": "Failed to create report", "error": "An error occurred while creating the report"}, 400
+            current_app.logger.error(f"Request data: {data}")
+            current_app.logger.error(f"Parsed args: {args}")
+            return {"message": "Failed to create report", "error": str(e)}, 400
         
     @jwt_required()
     def get(self, report_id=None):
