@@ -76,6 +76,10 @@ class UserResources(Resource):
         if User.query.filter_by(email=data["email"]).first():
             return ({"Success": False, "message": "Email address already taken"}), 409
 
+        # Validate phone number format (exactly 10 digits)
+        if not re.match(r'^\d{10}$', data["phone_number"]):
+            return ({"Success": False, "message": "Phone number must be exactly 10 digits"}), 400
+
         # Check for existing phone number
         if User.query.filter_by(phone_number=data["phone_number"]).first():
             return ({"Success": False, "message": "Phone number already taken"}), 409
