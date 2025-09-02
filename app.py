@@ -15,7 +15,7 @@ from flask_limiter.util import get_remote_address
 
 #resource imports
 from models import db, TokenBlocklist
-from resources.user import UserResources, LoginResource, TokenRefreshResource, UserReportsResource, DebugUserReportsResource
+from resources.user import UserResources, LoginResource, TokenRefreshResource, UserReportsResource
 from resources.status_update import ReportStatusUpdateResource
 from resources.emergency_contact import EmergencyContactResource
 from resources.report import ReportResource
