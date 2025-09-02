@@ -66,7 +66,7 @@ class ReportStatusUpdateResource(Resource):
                 status=new_status,
                 timestamp=datetime.now()
             )
-            report.status = new_status
+            # Note: Report model doesn't have a status field, status is tracked via StatusUpdate
 
             db.session.add(status_update)
             db.session.commit()

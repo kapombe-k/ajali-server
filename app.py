@@ -30,18 +30,25 @@ load_dotenv()
 app = Flask(__name__)
 
 # configuring our flask app through the config object
-#app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SUPABASE_URL")
+ENVIRONMENT = os.environ.get("ENVIRONMENT", "development")
+if ENVIRONMENT == "production":
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SUPABASE_URL")
+else:
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+
 app.config["SQLALCHEMY_ECHO"] = True
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# Add upload folder configuration
+app.config["UPLOAD_FOLDER"] = os.path.join(os.getcwd(), "uploads")
 
 # access token and JWT configuration
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=2)
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=7)
-app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
-app.config["JWT_COOKIE_SECURE"] = True
-app.config["JWT_COOKIE_CSRF_PROTECT"] = True
+app.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
+app.config["JWT_COOKIE_SECURE"] = ENVIRONMENT == "production"
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # Disable CSRF for API usage
 app.config["JWT_COOKIE_SAMESITE"] = "Lax"
 app.config["BUNDLE_ERRORS"] = True
 
@@ -87,10 +94,19 @@ BASE_URL = os.environ.get("BASE_URL")
 # CORS setup with proper credentials support
 CORS(
     app,
-    resources={r"/*": {"origins": BASE_URL}},
-    supports_credentials=True,
-    allow_headers=["Content-Type", "Authorization", "X-CSRF-Token"],
-    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+    resources={
+        r"/*": {
+            "origins": [
+                "http://127.0.0.1:5000",
+                "http://localhost:5173",
+                "https://localhost:5173",
+                BASE_URL
+            ] if BASE_URL else ["http://127.0.0.1:5000", "http://localhost:5173", "https://localhost:5173"],
+            "supports_credentials": True,
+            "allow_headers": ["Content-Type", "Authorization", "X-CSRF-Token"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        }
+    }
 )
 
 # Resource routes
@@ -108,7 +124,7 @@ api.add_resource(ReportStatusUpdateResource, "/reports/<int:report_id>/status")
 # @app.after_request
 # def after_request(response):
 #     # CORS headers
-#     response.headers.add('Access-Control-Allow-Origin')
+#     response.headers.add('Access-Control-Allow-Origin', BASE_URL)
 #     response.headers.add('Access-Control-Allow-Credentials', 'true')
 #     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-CSRF-Token')
 #     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')

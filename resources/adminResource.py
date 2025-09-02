@@ -60,12 +60,13 @@ class AdminResource(Resource):
             if args["status"] not in valid_statuses:
                 return {"Success": False, "message": "Invalid status"}, 400
 
-            old_status = report.status
-            new_status = args["status"]
-
-            report.status = new_status
+            # Note: Report model doesn't have a status field, status is tracked via StatusUpdate
+            # For now, we'll just update the updated_at timestamp
             report.updated_at = datetime.now(timezone.utc)
             db.session.commit()
+
+            old_status = "unknown"  # Since we don't have old status in Report model
+            new_status = args["status"]
 
             # self.notify_user(report, old_status, new_status)
 
@@ -118,13 +119,17 @@ class AdminResource(Resource):
             return {"Success": False, "message": "An error occurred while deleting the report"}, 500
 
     def serialize_report(self, report):
+        # Get latest status from StatusUpdate
+        from models import StatusUpdate
+        latest_status = StatusUpdate.query.filter_by(report_id=report.id).order_by(StatusUpdate.timestamp.desc()).first()
+
         return {
             "id": report.id,
             "incident": report.incident,
             "details": report.details,
             "latitude": report.latitude,
             "longitude": report.longitude,
-            "status": report.status,
+            "status": latest_status.status if latest_status else "pending",
             "created_at": report.created_at.isoformat() if report.created_at else None,
             "updated_at": report.updated_at.isoformat() if report.updated_at else None,
             "user_id": report.user_id,

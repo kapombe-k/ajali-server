@@ -17,7 +17,7 @@ class ReportResource(Resource):
     parser.add_argument("longitude", type=str, help="Select a location")
 
     def allowed_file(self, filename):
-        ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
+        ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "mp4", "avi", "mov", "webm"}
         return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
     
     def validate_file(self, file):
@@ -79,8 +79,8 @@ class ReportResource(Resource):
                 user_id=data["user_id"],
                 incident=args["incident"],
                 details=args.get("details"),
-                latitude=data["latitude"],
-                longitude=data["longitude"],
+                latitude=float(data["latitude"]) if data.get("latitude") else 0.0,
+                longitude=float(data["longitude"]) if data.get("longitude") else 0.0,
             )
             db.session.add(report)
             db.session.commit()

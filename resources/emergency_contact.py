@@ -8,6 +8,7 @@ class EmergencyContactResource(Resource):
     parser.add_argument('phone_number', type=str, required=True, help='Phone number is required')
     parser.add_argument('email', type=str, required=False)
     parser.add_argument('address', type=str, required=False)
+    parser.add_argument('user_id', type=int, required=True, help='User ID is required')
     
     def get(self, id=None):
         try:
@@ -30,7 +31,8 @@ class EmergencyContactResource(Resource):
                 relationship=data['relationship'],
                 phone_number=data['phone_number'],
                 email=data.get('email'),
-                address=data.get('address')
+                address=data.get('address'),
+                user_id=data['user_id']
             )
             db.session.add(contact)
             db.session.commit()
